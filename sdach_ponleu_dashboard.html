@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ស្តេចពន្លឺ — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Noto+Sans+Khmer:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #0A0C11;
+    --panel: #12151D;
+    --panel-2: #171B26;
+    --line: #232838;
+    --beam: #FFC24B;
+    --beam-soft: #FFC24B33;
+    --battery: #4FE0C4;
+    --battery-soft: #4FE0C433;
+    --danger: #FF6B57;
+    --text: #F2EFE9;
+    --text-muted: #8891A5;
+    --text-dim: #565E70;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text);}
+  body{
+    font-family:'Noto Sans Khmer','Kantumruy Pro',sans-serif;
+    min-height:100vh;
+    padding: 0 0 60px 0;
+    position:relative;
+    overflow-x:hidden;
+  }
+  .display{font-family:'Kantumruy Pro','Noto Sans Khmer',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding: 56px 32px 64px;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  .beam-cone{
+    position:absolute;
+    top:-220px; left:50%;
+    width:1400px; height:900px;
+    transform:translateX(-50%);
+    background: conic-gradient(from 200deg at 50% 0%, transparent 0deg, var(--beam-soft) 18deg, transparent 40deg);
+    filter: blur(2px);
+    pointer-events:none;
+    animation: flicker 6s ease-in-out infinite;
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    48%{opacity:1;}
+    50%{opacity:0.75;}
+    52%{opacity:1;}
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--beam); font-family:'JetBrains Mono',monospace;
+    margin-bottom:18px;
+    position:relative; z-index:2;
+  }
+  .eyebrow::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--beam); box-shadow:0 0 10px var(--beam);}
+  .hero h1{
+    position:relative; z-index:2;
+    font-size:clamp(28px, 4.2vw, 46px);
+    font-weight:700;
+    line-height:1.25;
+    max-width:820px;
+    margin-bottom:10px;
+  }
+  .hero p.sub{
+    position:relative; z-index:2;
+    color:var(--text-muted);
+    font-size:15.5px;
+    max-width:620px;
+    line-height:1.7;
+  }
+  .kpi-row{
+    position:relative; z-index:2;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-top:40px;
+    max-width:1080px;
+  }
+  .kpi{
+    background:linear-gradient(180deg, var(--panel-2), var(--panel));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 18px;
+    position:relative;
+  }
+  .kpi .label{font-size:12.5px; color:var(--text-muted); margin-bottom:10px;}
+  .kpi .value{font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; color:var(--text);}
+  .kpi .value span{color:var(--beam); font-size:15px; margin-inline-start:4px;}
+  .kpi.accent .value{color:var(--beam);}
+
+  /* ---------- SECTIONS ---------- */
+  .wrap{max-width:1080px; margin:0 auto; padding: 0 32px;}
+  section{padding:52px 0; border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  .sec-head{display:flex; align-items:baseline; gap:12px; margin-bottom:26px; flex-wrap:wrap;}
+  .sec-num{font-family:'JetBrains Mono',monospace; color:var(--text-dim); font-size:14px;}
+  .sec-head h2{font-size:22px; font-weight:700;}
+  .sec-desc{color:var(--text-muted); font-size:14.5px; margin-bottom:28px; max-width:680px; line-height:1.7;}
+
+  .grid-2{display:grid; grid-template-columns:1.1fr 0.9fr; gap:20px;}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+  }
+  .card h3{font-size:14px; font-weight:600; color:var(--text-muted); margin-bottom:16px; letter-spacing:0.02em;}
+  .chart-box{position:relative; height:280px;}
+  .chart-box.tall{height:320px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{text-align:left; color:var(--text-dim); font-weight:500; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; padding:0 10px 10px; border-bottom:1px solid var(--line);}
+  td{padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td.num{font-family:'JetBrains Mono',monospace; text-align:right; white-space:nowrap;}
+  .tag{display:inline-block; font-size:11px; padding:3px 9px; border-radius:20px; font-family:'JetBrains Mono',monospace;}
+  .tag.flash{background:var(--beam-soft); color:var(--beam);}
+  .tag.batt{background:var(--battery-soft); color:var(--battery);}
+  .tag.other{background:#8891A522; color:var(--text-muted);}
+  .rank{font-family:'JetBrains Mono',monospace; color:var(--text-dim); font-size:12px; width:22px; display:inline-block;}
+
+  .cat-bar-row{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+  .cat-bar-row .cname{width:170px; font-size:13px; flex-shrink:0;}
+  .cat-bar-track{flex:1; height:10px; background:var(--panel-2); border-radius:6px; overflow:hidden; border:1px solid var(--line);}
+  .cat-bar-fill{height:100%; border-radius:6px;}
+  .cat-bar-val{width:80px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--text-muted); flex-shrink:0;}
+
+  .rec-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  .rec-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px;}
+  .rec-card .ico{font-size:22px; margin-bottom:12px;}
+  .rec-card h4{font-size:14.5px; margin-bottom:8px; font-weight:600;}
+  .rec-card p{font-size:13px; color:var(--text-muted); line-height:1.7;}
+
+  .reel-card{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--beam); border-radius:10px; padding:18px 20px; margin-bottom:14px;}
+  .reel-card .rt{font-weight:700; font-size:14.5px; margin-bottom:6px;}
+  .reel-card .rd{font-size:13.5px; color:var(--text-muted); line-height:1.75;}
+  .reel-card .rd b{color:var(--text);}
+
+  .note{
+    font-size:12.5px; color:var(--text-dim); background:var(--panel-2);
+    border:1px dashed var(--line); border-radius:10px; padding:12px 16px; margin-top:14px; line-height:1.6;
+  }
+  .note b{color:var(--text-muted);}
+
+  footer{max-width:1080px; margin:0 auto; padding:30px 32px 0; color:var(--text-dim); font-size:12px; text-align:center;}
+
+  @media(max-width:760px){
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .grid-2{grid-template-columns:1fr;}
+    .rec-grid{grid-template-columns:1fr;}
+    .hero{padding:44px 18px 48px;}
+    .wrap{padding:0 18px;}
+    table{font-size:12px;}
+    th:nth-child(3), td:nth-child(3){display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="beam-cone"></div>
+  <div class="eyebrow">page analytics · jan 01 – jul 14, 2026</div>
+  <h1 class="display">ស្តេចពន្លឺ — របាយការណ៍ស៊ីជម្រៅលើទិន្នន័យ Facebook</h1>
+  <p class="sub">ការវិភាគប៉ុស្ត៍សរុប 788 ដើម្បីស្វែងយល់ថាតើមាតិកាប្រភេទណាភ្លឺជាងគេ ម៉ោង និងទម្រង់ណាទាក់ទាញអតិថិជនបំផុត។</p>
+  <div class="kpi-row">
+    <div class="kpi accent"><div class="label">ចំនួនមើលសរុប (Views)</div><div class="value">9.06M</div></div>
+    <div class="kpi"><div class="label">អន្តរកម្មសរុប (Interactions)</div><div class="value">280<span>K</span></div></div>
+    <div class="kpi"><div class="label">ការចែករំលែកសរុប (Shares)</div><div class="value">8,631</div></div>
+    <div class="kpi"><div class="label">សារបង្ហោះសរុប</div><div class="value">788</div></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- SECTION 1: CATEGORY -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>តាមប្រភេទផលិតផល — តើអ្នកណាជាផ្កាយ?</h2></div>
+    <p class="sec-desc">🔦 <b style="color:var(--beam)">ពិល (Flashlight)</b> ដឹកនាំគេលើចំនួនមើលសរុប ស្ទើរទ្វេដងនៃអាគុយលីចូម ខណៈអាគុយវិញមាន engagement rate ខ្ពស់ជាងក្នុងមួយ view។</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>ចំនួនមើលសរុប តាមប្រភេទផលិតផល (Total Views)</h3>
+        <div id="catBars"></div>
+      </div>
+      <div class="card">
+        <h3>Views មធ្យម ក្នុងមួយប៉ុស្ត៍ (Avg per Post)</h3>
+        <div class="chart-box"><canvas id="avgViewsChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>តារាងសង្ខេបពេញលេញ</h3>
+      <table id="catTable"></table>
+    </div>
+    <div class="note"><b>ចំណាំ៖</b> ជួរឈ្មោះ "ចំណូលប្រហាក់ប្រហែល" (Approximate Earnings) មានតម្លៃ 0 សម្រាប់គ្រប់ប៉ុស្ត៍ទាំង 788 — ទំព័រនេះមិនទាន់បានបើក monetization (In-stream Ads/Stars) ដូច្នេះលទ្ធផលបានផ្អែកលើ Views/Interactions/Shares ជាសូចនាករ។</div>
+  </section>
+
+  <!-- SECTION 2: TOP POSTS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>សារបង្ហោះល្អបំផុត — Top 8 តាមចំនួនមើល</h2></div>
+    <p class="sec-desc">ចំណងជើងដែលមានតម្លៃច្បាស់លាស់ + emoji ភ្ញាក់ផ្អើល (😲🔥) + ការធានា ទទួលបានលទ្ធផលល្អជាងគេ។</p>
+    <div class="card"><table id="topTable"></table></div>
+  </section>
+
+  <!-- SECTION 3: TIMING & FORMAT -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>ពេលវេលា និងទម្រង់ដ៏ល្អបំផុត</h2></div>
+    <p class="sec-desc">វីដេអូខ្លីៗ (0-15s) ឬវីដេអូវែងបែប review ពេញលេញ (3min+) ដំណើរការល្អជាងជួរកណ្តាល។ ថ្ងៃអាទិត្យ និងម៉ោង 21-22 យប់ជាចំណុចកំពូល។</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Views មធ្យម តាមរយៈពេលវីដេអូ (Duration)</h3>
+        <div class="chart-box"><canvas id="durChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Views មធ្យម តាមថ្ងៃនៃសប្តាហ៍</h3>
+        <div class="chart-box"><canvas id="dowChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>Views មធ្យម តាមម៉ោងបោះពុម្ព (24h)</h3>
+      <div class="chart-box tall"><canvas id="hourChart"></canvas></div>
+      <div class="note"><b>ចំណាំ៖</b> បានដកចេញប៉ុស្ត៍ viral មួយ (707,298 views ម៉ោង 8 ព្រឹក) ដើម្បីកុំឲ្យធ្វើឲ្យទិន្នន័យខូចទម្រង់ — ការវិភាគនេះឆ្លុះបញ្ចាំងគំរូជាធម្មតា។</div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: RECOMMENDATIONS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>អនុសាសន៍អាចធ្វើទៅបាន</h2></div>
+    <div class="rec-grid">
+      <div class="rec-card"><div class="ico">⏱️</div><h4>រយៈពេលវីដេអូ</h4><p>ជ្រើសរើស 0-15s (quick hook) ឬ 3min+ (full review) — ចៀសវាង 31-60s ដែលទាបជាងគេ</p></div>
+      <div class="rec-card"><div class="ico">📅</div><h4>ពេលបង្ហោះ</h4><p>ថ្ងៃអាទិត្យ ម៉ោង 21:00-22:00 យប់ ទទួលបានលទ្ធផលកំពូល</p></div>
+      <div class="rec-card"><div class="ico">✍️</div><h4>រចនាបទចំណងជើង</h4><p>តម្លៃច្បាស់ + emoji ភ្ញាក់ផ្អើល (😲🔥💥) + hashtag ជាក់លាក់</p></div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: REEL CONCEPTS -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>គំនិត Reels សម្រាប់ផលិតផលកំពូល</h2></div>
+
+    <div class="reel-card">
+      <div class="rt">1. តេស្តពិល vs ភាពងងឹតទាំងស្រុង 🔦</div>
+      <div class="rd">Hook 3 វិនាទីដំបូង៖ បិទភ្លើងបន្ទប់ងងឹតទាំងស្រុង → បើកពិល S-80 បាញ់ចម្ងាយ 800-1000m → text on screen <b>"ចម្ងាយ 1000 ម៉ែត្រ! 😲"</b> → បង្ហាញតម្លៃ + លេខទំនាក់ទំនង</div>
+    </div>
+    <div class="reel-card">
+      <div class="rt">2. 1 នាទីសាកអាគុយម៉ូតូ Sodium Ion ជាមួយភស្តុតាងជាក់ស្តែង 🔋</div>
+      <div class="rd">តេស្ត CCA/ស្តាតម៉ូតូភ្លាមៗ ឬប្រៀបធៀបទំហំ/ទម្ងន់ជាមួយអាគុយចាស់ → បញ្ចប់ដោយតម្លៃច្បាស់ (ស្រដៀងប៉ុស្ត៍ <b>"58$ 😲😲"</b> ដែលទទួលបាន Share 713 ដង)</div>
+    </div>
+    <div class="reel-card">
+      <div class="rt">3. Before/After: ពិល 1 គ្រាប់ ប្រើបានប៉ុន្មានម៉ោង? 🔦🔋</div>
+      <div class="rd">Time-lapse 20 ម៉ោង បង្ហាញពិលនៅតែភ្លឺដដែល → ចង្អុលបង្ហាញ battery life ជា USP → បញ្ចប់ដោយ CTA "Inbox ឥឡូវនេះ" — ផ្សំគុណសម្បត្តិផលិតផលទាំង២ ជំរុញការទិញរួម</div>
+    </div>
+  </section>
+
+</div>
+
+<footer>ស្តេចពន្លឺ · Facebook Page Analytics Dashboard · Jan 01 – Jul 14, 2026</footer>
+
+<script>
+const catData = [
+  {name:'ពិល (Flashlight)', posts:306, views:5511485, avgViews:18011.4, interactions:170738, avgInt:558.0, shares:5091, color:'#FFC24B'},
+  {name:'អាគុយលីចូម/ថ្ម (Battery)', posts:337, views:2693768, avgViews:7993.4, interactions:82722, avgInt:245.5, shares:2983, color:'#4FE0C4'},
+  {name:'ផ្សេងៗ (General)', posts:72, views:593234, avgViews:8239.4, interactions:20783, avgInt:288.7, shares:398, color:'#8891A5'},
+  {name:'Power Station/Solar', posts:54, views:209814, avgViews:3885.4, interactions:5201, avgInt:96.3, shares:152, color:'#6C7A99'},
+  {name:'BMS/គ្រឿងបន្លាស់', posts:19, views:55894, avgViews:2941.8, interactions:584, avgInt:30.7, shares:7, color:'#4A5266'},
+];
+
+const topPosts = [
+  {views:707298, inter:1275, shares:15, type:'វីដេអូខ្លី', cat:'flash', title:'ស្តេចពិលប្រចាំត្រកូល... ចម្ងាយ 1500ម'},
+  {views:481939, inter:1561, shares:92, type:'វីដេអូខ្លី', cat:'flash', title:'អាគុយលីចូម ជិតផុតប្រម៉ូតសិនហើយ...'},
+  {views:285710, inter:8988, shares:377, type:'វីដេអូខ្លី', cat:'batt', title:'អាគុយលីចូម 12V 30/45/60/75Ah'},
+  {views:262872, inter:11546, shares:713, type:'វីដេអូខ្លី', cat:'batt', title:'WOW អាគុយលីចូមតម្លៃតែ 58$ 😲😲'},
+  {views:252471, inter:11517, shares:809, type:'Reel', cat:'flash', title:'ពិលថ្លាភ្លើងពណ៍ថ្ងៃ ភ្លឺខ្លាំង ធានា២ខែ'},
+  {views:225345, inter:8945, shares:343, type:'វីដេអូខ្លី', cat:'batt', title:'អាគុយលីចូម 12V 30/45/60/75Ah v2'},
+  {views:151199, inter:5422, shares:167, type:'Reel', cat:'flash', title:'ពន្លឺភ្លឺខ្លាំងល្អណាស់ ពិល S-80'},
+  {views:140467, inter:5076, shares:117, type:'វីដេអូខ្លី', cat:'flash', title:'ពិល S-80 ល្អសម្រាប់រកសត្វពេលយប់'},
+];
+
+const durLabels = ['0-15s','16-30s','31-60s','1-3min','3min+'];
+const durViews = [17913.0, 15629.5, 8311.2, 5880.4, 21032.6];
+
+const dowLabels = ['ចន្ទ','អង្គារ','ពុធ','ព្រហ.','សុក្រ','សៅរ៍','អាទិត្យ'];
+const dowViews = [12542.1, 9795.9, 6708.8, 8828.6, 9533.4, 11311.4, 22153.1];
+
+const hourLabels = Array.from({length:24}, (_,i)=>i+'h');
+const hourViews = [15528,7472,9174,6406,13381,11742,13399,14847,13428,8270,4642,0,0,0,0,0,8381,4648,9466,7965,6717,17427,17704,7902];
+
+// ---- Category horizontal bars ----
+const maxViews = Math.max(...catData.map(c=>c.views));
+document.getElementById('catBars').innerHTML = catData.map(c=>`
+  <div class="cat-bar-row">
+    <div class="cname">${c.name}</div>
+    <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${(c.views/maxViews*100).toFixed(1)}%; background:${c.color};"></div></div>
+    <div class="cat-bar-val">${(c.views/1000).toFixed(0)}K</div>
+  </div>
+`).join('');
+
+// ---- Category table ----
+document.getElementById('catTable').innerHTML = `
+  <tr><th>ប្រភេទ</th><th>ប៉ុស្ត៍</th><th class="num">Views សរុប</th><th class="num">Views មធ្យម</th><th class="num">Interactions</th><th class="num">Shares</th></tr>
+  ${catData.map(c=>`
+    <tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-inline-end:8px;"></span>${c.name}</td>
+      <td class="num">${c.posts}</td>
+      <td class="num">${c.views.toLocaleString()}</td>
+      <td class="num">${c.avgViews.toLocaleString()}</td>
+      <td class="num">${c.interactions.toLocaleString()}</td>
+      <td class="num">${c.shares.toLocaleString()}</td>
+    </tr>
+  `).join('')}
+`;
+
+// ---- Top posts table ----
+document.getElementById('topTable').innerHTML = `
+  <tr><th>#</th><th>ចំណងជើង</th><th>ប្រភេទ</th><th class="num">Views</th><th class="num">Interactions</th><th class="num">Shares</th></tr>
+  ${topPosts.map((p,i)=>`
+    <tr>
+      <td><span class="rank">${String(i+1).padStart(2,'0')}</span></td>
+      <td>${p.title} <span class="tag ${p.cat}" style="margin-inline-start:6px;">${p.type}</span></td>
+      <td style="color:var(--text-muted); font-size:12.5px;">${p.cat==='flash'?'ពិល':'អាគុយ'}</td>
+      <td class="num">${p.views.toLocaleString()}</td>
+      <td class="num">${p.inter.toLocaleString()}</td>
+      <td class="num">${p.shares.toLocaleString()}</td>
+    </tr>
+  `).join('')}
+`;
+
+// ---- Chart.js defaults ----
+Chart.defaults.color = '#8891A5';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const gridStyle = { color:'#232838', drawTicks:false };
+
+// Avg views by category (bar)
+new Chart(document.getElementById('avgViewsChart'), {
+  type:'bar',
+  data:{
+    labels: catData.map(c=>c.name.split(' ')[0]),
+    datasets:[{ data: catData.map(c=>c.avgViews), backgroundColor: catData.map(c=>c.color), borderRadius:6, maxBarThickness:38 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{display:false}, ticks:{font:{family:"'Noto Sans Khmer'", size:11}}},
+      y:{grid:gridStyle, ticks:{callback:v=>(v/1000)+'K'}}
+    }
+  }
+});
+
+// Duration bucket chart
+new Chart(document.getElementById('durChart'), {
+  type:'bar',
+  data:{ labels: durLabels, datasets:[{ data: durViews, backgroundColor:'#FFC24B', borderRadius:6, maxBarThickness:44 }]},
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}}, y:{grid:gridStyle, ticks:{callback:v=>(v/1000)+'K'}} }
+  }
+});
+
+// DOW chart
+new Chart(document.getElementById('dowChart'), {
+  type:'bar',
+  data:{ labels: dowLabels, datasets:[{ data: dowViews, backgroundColor: dowLabels.map((_,i)=> i===6 ? '#FFC24B' : '#4FE0C4'), borderRadius:6, maxBarThickness:34 }]},
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}, ticks:{font:{family:"'Noto Sans Khmer'", size:12}}}, y:{grid:gridStyle, ticks:{callback:v=>(v/1000)+'K'}} }
+  }
+});
+
+// Hour chart (line)
+new Chart(document.getElementById('hourChart'), {
+  type:'line',
+  data:{
+    labels: hourLabels,
+    datasets:[{
+      data: hourViews, borderColor:'#FFC24B', backgroundColor:'#FFC24B22',
+      fill:true, tension:0.35, pointRadius:2, pointBackgroundColor:'#FFC24B'
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}}, y:{grid:gridStyle, ticks:{callback:v=>(v/1000)+'K'}} }
+  }
+});
+</script>
+
+</body>
+</html>
